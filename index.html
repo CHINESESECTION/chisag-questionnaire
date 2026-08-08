@@ -9,6 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- Shared master student list (same file the system uses). Must sit in this same folder. -->
+    <script src="CHISAG_MASTER_NAMES.js"></script>
     <style>
         :root { --ug-blue:#1e3a8a; --ug-gold:#fbbf24; }
         body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
@@ -67,6 +69,13 @@
             </div>
 
             <form id="memberForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">Index ID</label>
+                    <input id="idInput" type="text" inputmode="numeric" required placeholder="e.g. 27177"
+                           class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-ug-gold focus:outline-none text-sm" />
+                    <p id="idHint" class="text-xs mt-1"></p>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-slate-600 mb-1">Surname</label>
@@ -80,24 +89,18 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-600 mb-1">Index ID</label>
-                        <input id="idInput" type="text" inputmode="numeric" required placeholder="e.g. 27177"
-                               class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-ug-gold focus:outline-none text-sm" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-600 mb-1">Level</label>
-                        <select id="levelSelect" required
-                                class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-ug-gold focus:outline-none text-sm bg-white">
-                            <option value="">Select level…</option>
-                            <option value="100">100</option>
-                            <option value="200">200</option>
-                            <option value="300">300</option>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">Level</label>
+                    <select id="levelSelect" required
+                            class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-ug-gold focus:outline-none text-sm bg-white">
+                        <option value="">Select level…</option>
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                        <option value="300">300</option>
                             <option value="400">400</option>
+                            <option value="RE-SIT">RE-SIT</option>
                             <option value="ALUMNI">ALUMNI</option>
                         </select>
-                    </div>
                 </div>
 
                 <div>
@@ -202,6 +205,7 @@
         const levelSelect = document.getElementById('levelSelect');
         const dobDay      = document.getElementById('dobDay');
         const dobMonth    = document.getElementById('dobMonth');
+        const idHint      = document.getElementById('idHint');
         const photoInput  = document.getElementById('photoInput');
         const photoName   = document.getElementById('photoName');
         const submitBtn   = document.getElementById('submitBtn');
@@ -217,6 +221,51 @@
             dobDay.insertAdjacentHTML('beforeend', `<option value="${v}">${v}</option>`);
         }
 
+        // ---------- Master-name auto-fill ----------
+        // Index ID is looked up in the shared CHISAG_MASTER_NAMES list. When found,
+        // Surname / Other Names / Level are filled in and locked; only DOB + photo remain.
+        const masterNames = (typeof window.MASTER_NAMES === 'object' && window.MASTER_NAMES) ? window.MASTER_NAMES : {};
+
+        function lockField(el, on) {
+            if (el.tagName === 'SELECT') el.disabled = on;
+            else el.readOnly = on;
+            el.classList.toggle('bg-slate-50', on);
+            el.classList.toggle('text-slate-500', on);
+        }
+
+        function lookupMaster() {
+            const id = idInput.value.trim().toUpperCase();
+            const rec = masterNames[id];
+            if (id && rec) {
+                surnameInput.value = (rec.s || '').toUpperCase();
+                otherInput.value   = (rec.o || '').toUpperCase();
+                levelSelect.value  = (rec.l || '').toUpperCase();
+                lockField(surnameInput, true);
+                lockField(otherInput, true);
+                lockField(levelSelect, true);
+                idHint.textContent = '✓ Found in CHISAG records — name & level filled automatically.';
+                idHint.className = 'text-xs mt-1 text-emerald-600 font-medium';
+            } else {
+                lockField(surnameInput, false);
+                lockField(otherInput, false);
+                lockField(levelSelect, false);
+                idHint.textContent = id ? 'Not found — please type your details below.' : '';
+                idHint.className = 'text-xs mt-1 text-amber-600';
+            }
+        }
+
+        function resetMasterLock() {
+            surnameInput.value = '';
+            otherInput.value = '';
+            levelSelect.value = '';
+            lockField(surnameInput, false);
+            lockField(otherInput, false);
+            lockField(levelSelect, false);
+            idHint.textContent = '';
+        }
+
+        idInput.addEventListener('input', lookupMaster);
+
         // ---------- Helpers ----------
         function showLogin() {
             loginCard.classList.remove('hidden');
@@ -229,6 +278,7 @@
             formCard.classList.remove('hidden');
             signedEmail.textContent = user.email;
             emailEcho.value = user.email;
+            resetMasterLock();
         }
         function showSuccess() {
             formCard.classList.add('hidden');
@@ -390,6 +440,7 @@
 
         anotherBtn.addEventListener('click', () => {
             form.reset();
+            resetMasterLock();
             photoFile = null;
             photoName.textContent = 'Max size: 5 MB.';
             showForm(auth.currentUser);
