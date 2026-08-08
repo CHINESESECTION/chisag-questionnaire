@@ -101,6 +101,35 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-semibold text-slate-600 mb-1">
+                        Date of Birth <span class="text-xs font-normal text-slate-400">(day &amp; month only)</span>
+                    </label>
+                    <div class="flex gap-2 max-w-xs">
+                        <select id="dobDay" required
+                                class="w-24 px-3 py-3 rounded-lg border border-slate-300 focus:border-ug-gold focus:outline-none text-sm text-center bg-white">
+                            <option value="">DD</option>
+                        </select>
+                        <select id="dobMonth" required
+                                class="flex-1 px-3 py-3 rounded-lg border border-slate-300 focus:border-ug-gold focus:outline-none text-sm bg-white">
+                            <option value="">Month</option>
+                            <option value="Jan">January</option>
+                            <option value="Feb">February</option>
+                            <option value="Mar">March</option>
+                            <option value="Apr">April</option>
+                            <option value="May">May</option>
+                            <option value="Jun">June</option>
+                            <option value="Jul">July</option>
+                            <option value="Aug">August</option>
+                            <option value="Sep">September</option>
+                            <option value="Oct">October</option>
+                            <option value="Nov">November</option>
+                            <option value="Dec">December</option>
+                        </select>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">No year needed — used only for birthday reminders.</p>
+                </div>
+
+                <div>
                     <label class="block text-sm font-semibold text-slate-600 mb-1">Email address</label>
                     <input id="emailEcho" type="text" readonly
                            class="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-500" />
@@ -171,6 +200,8 @@
         const otherInput  = document.getElementById('otherInput');
         const idInput     = document.getElementById('idInput');
         const levelSelect = document.getElementById('levelSelect');
+        const dobDay      = document.getElementById('dobDay');
+        const dobMonth    = document.getElementById('dobMonth');
         const photoInput  = document.getElementById('photoInput');
         const photoName   = document.getElementById('photoName');
         const submitBtn   = document.getElementById('submitBtn');
@@ -179,6 +210,12 @@
         const doneBtn     = document.getElementById('doneBtn');
 
         let photoFile = null;
+
+        // Populate the Date-of-Birth day dropdown (01–31).
+        for (let i = 1; i <= 31; i++) {
+            const v = i < 10 ? '0' + i : String(i);
+            dobDay.insertAdjacentHTML('beforeend', `<option value="${v}">${v}</option>`);
+        }
 
         // ---------- Helpers ----------
         function showLogin() {
@@ -298,9 +335,10 @@
             const surname = surnameInput.value.trim();
             const other = otherInput.value.trim();
             const level = levelSelect.value;
+            const dob = (dobDay.value && dobMonth.value) ? (dobDay.value + " " + dobMonth.value) : "";
 
-            if (!id || !surname || !other || !level) {
-                alert('Please fill in all required fields.');
+            if (!id || !surname || !other || !level || !dob) {
+                alert('Please fill in all required fields, including date of birth.');
                 return;
             }
             if (!/^\d{3,}$/.test(id)) {
@@ -327,6 +365,7 @@
                 "Surname": surname.toUpperCase(),
                 "Other Names": other.toUpperCase(),
                 "Level": level.toUpperCase(),
+                "Date of Birth": dob,
                 "Upload your picture": photoB64,
                 "photoBase64": photoB64,
                 "Email Address": user.email,   // login-verified email
